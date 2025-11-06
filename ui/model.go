@@ -17,7 +17,7 @@ import (
 type View int
 
 const (
-	DashboardView View = iota
+	HelpView View = iota
 	ReleasesView
 	RepositoriesView
 	ValuesView
@@ -39,7 +39,7 @@ type Model struct {
 	keys        KeyMap
 
 	// Sub-models
-	dashboard     *DashboardModel
+	help          *HelpModel
 	releases      *ReleasesModel
 	repositories  *RepositoriesModel
 	values        *ValuesModel
@@ -114,9 +114,9 @@ func NewModel() (*Model, error) {
 	m := &Model{
 		helmClient:   helmClient,
 		k8sContext:   k8sContext,
-		currentView:  DashboardView,
+		currentView:  HelpView,
 		keys:         DefaultKeyMap(),
-		dashboard:    NewDashboardModel(),
+		help:         NewHelpModel(),
 		releases:     NewReleasesModel(),
 		repositories: NewRepositoriesModel(),
 		values:       NewValuesModel(),
@@ -146,6 +146,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		// Forward window size to specific views
+		if m.currentView == HelpView {
+			var cmd tea.Cmd
+			_, cmd = m.help.Update(msg)
+			return m, cmd
+		}
 		if m.currentView == ValuesView {
 			var cmd tea.Cmd
 			_, cmd = m.values.Update(msg)
@@ -239,7 +244,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKeyPress(msg)
 
 	case releasesMsg:
-		m.dashboard.SetReleases(msg)
 		m.releases.SetReleases(msg)
 		return m, nil
 
@@ -253,7 +257,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentView = ValuesView
 		var cmd tea.Cmd
 		_, cmd = m.values.Update(msg)
-		return m, cmd
+		// Send window size to initialize viewport
+		_, sizeCmd := m.values.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+		return m, tea.Batch(cmd, sizeCmd)
 
 	case podsMsg:
 		// Switch to pods view when pods are loaded
@@ -261,7 +267,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentView = PodsView
 		var cmd tea.Cmd
 		_, cmd = m.pods.Update(msg)
-		return m, cmd
+		// Send window size to initialize viewport if needed
+		_, sizeCmd := m.pods.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+		return m, tea.Batch(cmd, sizeCmd)
 
 	case logsMsg:
 		// Switch to logs view when logs are loaded
@@ -269,7 +277,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentView = LogsView
 		var cmd tea.Cmd
 		_, cmd = m.logs.Update(msg)
-		return m, cmd
+		// Send window size to initialize viewport
+		_, sizeCmd := m.logs.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+		return m, tea.Batch(cmd, sizeCmd)
 
 	case errMsg:
 		m.err = error(msg)
@@ -278,9 +288,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Route messages to active view
 	switch m.currentView {
-	case DashboardView:
+	case HelpView:
 		var cmd tea.Cmd
-		_, cmd = m.dashboard.Update(msg)
+		_, cmd = m.help.Update(msg)
 		return m, cmd
 	case ReleasesView:
 		var cmd tea.Cmd
@@ -523,17 +533,11 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case msg.String() == "d" && m.currentView == ReleasesView:
 		return m, m.deleteRelease()
 
-	case msg.String() == "i" && (m.currentView == ReleasesView || m.currentView == DashboardView):
+	case msg.String() == "i" && m.currentView == ReleasesView:
 		// Open install form
 		m.previousView = m.currentView
 		m.currentView = InstallView
 		return m, m.install.Init()
-
-	case msg.String() == "s" && m.currentView == DashboardView:
-		// Quick start - open chart catalog
-		m.previousView = m.currentView
-		m.currentView = CatalogView
-		return m, m.catalog.Init()
 
 	case msg.String() == "u" && m.currentView == ReleasesView:
 		// Open upgrade view
@@ -575,8 +579,8 @@ func (m *Model) View() string {
 
 	// Render current view
 	switch m.currentView {
-	case DashboardView:
-		b.WriteString(m.dashboard.View())
+	case HelpView:
+		b.WriteString(m.help.View())
 	case ReleasesView:
 		b.WriteString(m.releases.View())
 	case RepositoriesView:
@@ -663,7 +667,7 @@ func (m *Model) overlayQuitConfirmation(baseView string) string {
 
 // renderTabs renders the tab navigation
 func (m *Model) renderTabs() string {
-	tabs := []string{"Dashboard", "Releases", "Repositories"}
+	tabs := []string{"Help", "Releases", "Repositories"}
 	var renderedTabs []string
 
 	for i, tab := range tabs {
@@ -693,14 +697,14 @@ func (m *Model) renderStatusBar() string {
 // switchView switches to the next view
 func (m *Model) switchView() tea.Cmd {
 	switch m.currentView {
-	case DashboardView:
+	case HelpView:
 		m.currentView = ReleasesView
 	case ReleasesView:
 		m.currentView = RepositoriesView
 	case RepositoriesView:
-		m.currentView = DashboardView
+		m.currentView = HelpView
 	default:
-		m.currentView = DashboardView
+		m.currentView = HelpView
 	}
 	return nil
 }

@@ -243,9 +243,9 @@ MIT License - see LICENSE file for details
 
 ## Acknowledgments
 
-- Inspired by [Dockit](https://github.com/erikdstock/dockit) Docker TUI
 - Built with [Claude Code](https://claude.com/claude-code)
 - Kubernetes community for excellent tooling
+- Helm project for the comprehensive SDK
 
 ## Support
 

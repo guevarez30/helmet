@@ -210,6 +210,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.manifestVP.SetContent(msg.Content)
 		m.manifestVP, cmd = m.manifestVP.Update(msg)
 		cmds = append(cmds, cmd)
+	case types.ResetViewMsg:
+		m.installing = false
+		m.upgrading = false
+		m.deleting = false
+		if m.selectedView != releasesView {
+			m.historyTable.SetCursor(0)
+			m.selectedView = releasesView
+			m.historyTable.Blur()
+			m.releaseTable = releaseTableCache
+		}
+		m.releaseTable.Focus()
+		return m, nil
 	case types.InstallMsg:
 		cmds = append(cmds, m.list)
 
@@ -249,17 +261,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedView = releasesView
 				m.historyTable.Blur()
 				m.releaseTable = releaseTableCache
+				cmds = append(cmds, func() tea.Msg {
+					return types.BreadcrumbMsg{Crumbs: []string{}}
+				})
 			}
 		case "enter", " ":
 			switch m.selectedView {
 			case releasesView:
+				if m.releaseTable.SelectedRow() == nil {
+					break
+				}
 				m.selectedView = historyView
 				releaseTableCache = m.releaseTable
+				releaseName := m.releaseTable.SelectedRow()[0]
 				m.releaseTable.SetHeight(3)
 				m.releaseTable.SetRows([]table.Row{m.releaseTable.SelectedRow()})
 				m.releaseTable.GotoTop()
 				m.historyTable.Focus()
 				cmds = append(cmds, m.history, m.getNotes, m.getMetadata, m.getHooks, m.getValues, m.getManifest)
+				cmds = append(cmds, func() tea.Msg {
+					return types.BreadcrumbMsg{Crumbs: []string{releaseName, "History"}}
+				})
 			}
 		case "l", "right":
 			switch m.selectedView {
@@ -276,6 +298,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedView = manifestView
 			default:
 				m.selectedView--
+			}
+		}
+		if m.selectedView != releasesView {
+			releaseName := ""
+			if m.releaseTable.SelectedRow() != nil {
+				releaseName = m.releaseTable.SelectedRow()[0]
+			}
+			viewNames := map[selectedView]string{
+				historyView:  "History",
+				notesView:    "Notes",
+				metadataView: "Metadata",
+				hooksView:    "Hooks",
+				valuesView:   "Values",
+				manifestView: "Manifest",
+			}
+			if name, ok := viewNames[m.selectedView]; ok {
+				cmds = append(cmds, func() tea.Msg {
+					return types.BreadcrumbMsg{Crumbs: []string{releaseName, name}}
+				})
 			}
 		}
 	}

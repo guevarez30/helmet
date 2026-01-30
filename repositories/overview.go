@@ -149,6 +149,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.list)
 	case types.UpdateRepoMsg:
 		cmds = append(cmds, m.list)
+	case types.ResetViewMsg:
+		m.installing = false
+		m.adding = false
+		m.showDefaultValue = false
+		m.selectedView = listView
+		m.FocusOnlyTable(listView)
+		return m, nil
 	case types.DefaultValueMsg:
 		m.defaultValueVP.SetContent(msg.Content)
 
@@ -169,7 +176,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		case "v":
 			m.showDefaultValue = true
-			return m, m.getDefaultValue
+			cmds = append(cmds, m.getDefaultValue)
+			cmds = append(cmds, func() tea.Msg {
+				return types.BreadcrumbMsg{Crumbs: []string{"Default Values"}}
+			})
+			return m, tea.Batch(cmds...)
 		case "down", "up", "j", "k":
 			switch m.selectedView {
 			case listView:
@@ -184,6 +195,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedView++
 			}
 			m.FocusOnlyTable(m.selectedView)
+			panelNames := map[selectedView]string{
+				listView:     "",
+				packagesView: "Packages",
+				versionsView: "Versions",
+			}
+			if name := panelNames[m.selectedView]; name != "" {
+				cmds = append(cmds, func() tea.Msg {
+					return types.BreadcrumbMsg{Crumbs: []string{name}}
+				})
+			} else {
+				cmds = append(cmds, func() tea.Msg {
+					return types.BreadcrumbMsg{Crumbs: []string{}}
+				})
+			}
 		case "D":
 			cmds = append(cmds, m.remove)
 		case "h", "left":
@@ -193,6 +218,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedView--
 			}
 			m.FocusOnlyTable(m.selectedView)
+			panelNames := map[selectedView]string{
+				listView:     "",
+				packagesView: "Packages",
+				versionsView: "Versions",
+			}
+			if name := panelNames[m.selectedView]; name != "" {
+				cmds = append(cmds, func() tea.Msg {
+					return types.BreadcrumbMsg{Crumbs: []string{name}}
+				})
+			} else {
+				cmds = append(cmds, func() tea.Msg {
+					return types.BreadcrumbMsg{Crumbs: []string{}}
+				})
+			}
 		case "u":
 			return m, m.update
 		case "r":
@@ -202,6 +241,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.adding = false
 			m.showDefaultValue = false
 			m.selectedView = listView
+			cmds = append(cmds, func() tea.Msg {
+				return types.BreadcrumbMsg{Crumbs: []string{}}
+			})
 		}
 	}
 	m.tables[listView], cmd = m.tables[listView].Update(msg)

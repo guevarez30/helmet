@@ -72,6 +72,13 @@ func (m HubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case types.AddRepoMsg:
 		m.repoAddInput.SetValue("")
 		m.repoAddInput.Blur()
+	case types.ResetViewMsg:
+		m.view = searchView
+		m.repoAddInput.Blur()
+		m.searchBar.Blur()
+		m.resultTable.Blur()
+		m.defaultValueVP.GotoTop()
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "a":
@@ -103,7 +110,11 @@ func (m HubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.resultTable.Focused() {
 				if m.resultTable.SelectedRow() != nil {
 					m.view = defaultValueView
+					packageName := m.resultTable.SelectedRow()[2]
 					cmds = append(cmds, m.searchDefaultValue)
+					cmds = append(cmds, func() tea.Msg {
+						return types.BreadcrumbMsg{Crumbs: []string{packageName, "Values"}}
+					})
 				}
 				return m, tea.Batch(cmds...)
 			}
@@ -111,6 +122,9 @@ func (m HubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.view = searchView
 			m.repoAddInput.Blur()
 			m.defaultValueVP.GotoTop()
+			cmds = append(cmds, func() tea.Msg {
+				return types.BreadcrumbMsg{Crumbs: []string{}}
+			})
 		}
 	}
 	m.searchBar, cmd = m.searchBar.Update(msg)

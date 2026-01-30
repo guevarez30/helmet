@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/pidanou/helm-tui/helpers"
 	"github.com/pidanou/helm-tui/styles"
 )
 
@@ -34,9 +33,7 @@ func (m Model) View() string {
 		view = m.renderReleaseDetail()
 	}
 
-	helperStyle := m.help.Styles.ShortSeparator
-	helpView := m.help.View(m.keys[m.selectedView]) + helperStyle.Render(" • ") + m.help.View(helpers.CommonKeys)
-	return view + "\n" + helpView
+	return view
 }
 
 func (m Model) menuView() string {

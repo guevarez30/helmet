@@ -9,17 +9,26 @@ import (
 
 // TestCommonKeys verifies that the CommonKeys are correctly initialized.
 func TestCommonKeys(t *testing.T) {
-	expectedMenuNext := key.NewBinding(key.WithKeys("[", "]"), key.WithHelp("[/]", "Change panel"))
+	expectedTabNav := key.NewBinding(key.WithKeys("tab", "shift+tab"), key.WithHelp("tab/S-tab", "Next/prev tab"))
+	expectedHistoryNav := key.NewBinding(key.WithKeys("[", "]"), key.WithHelp("[/]", "History back/fwd"))
+	expectedCommand := key.NewBinding(key.WithKeys(":"), key.WithHelp(":", "Command"))
+	expectedHelp := key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "Help"))
 	expectedQuit := key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "Quit"))
 
-	assert.Equal(t, expectedMenuNext, CommonKeys.MenuNext, "MenuNext keybinding should match")
+	assert.Equal(t, expectedTabNav, CommonKeys.TabNav, "TabNav keybinding should match")
+	assert.Equal(t, expectedHistoryNav, CommonKeys.HistoryNav, "HistoryNav keybinding should match")
+	assert.Equal(t, expectedCommand, CommonKeys.Command, "Command keybinding should match")
+	assert.Equal(t, expectedHelp, CommonKeys.Help, "Help keybinding should match")
 	assert.Equal(t, expectedQuit, CommonKeys.Quit, "Quit keybinding should match")
 }
 
 // TestShortHelp verifies that ShortHelp returns the correct keybindings for keyMap.
 func TestKeyMapShortHelp(t *testing.T) {
 	expected := []key.Binding{
-		CommonKeys.MenuNext,
+		CommonKeys.TabNav,
+		CommonKeys.Command,
+		CommonKeys.HistoryNav,
+		CommonKeys.Help,
 		CommonKeys.Quit,
 	}
 

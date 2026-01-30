@@ -53,6 +53,10 @@ func (m PluginsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.list
 	case types.PluginUninstallMsg:
 		return m, m.list
+	case types.ResetViewMsg:
+		m.installPluginInput.Blur()
+		m.pluginsTable.Focus()
+		return m, nil
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keys.Install):

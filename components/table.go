@@ -57,12 +57,6 @@ func GenerateTable() table.Model {
 	t := table.New()
 	s := table.DefaultStyles()
 	k := table.DefaultKeyMap()
-	k.HalfPageUp.Unbind()
-	k.PageDown.Unbind()
-	k.HalfPageDown.Unbind()
-	k.HalfPageDown.Unbind()
-	k.GotoBottom.Unbind()
-	k.GotoTop.Unbind()
 	s.Header = s.Header.
 		BorderStyle(styles.Border).
 		BorderForeground(lipgloss.Color("240")).
@@ -78,13 +72,13 @@ func GenerateTable() table.Model {
 	return t
 }
 
-func RenderTable(t table.Model, height int, width int) string {
+func RenderTable(t table.Model, height int, width int, title string) string {
 	var topBorder string
 	t.SetHeight(height)
 	t.SetWidth(width)
 	view := t.View()
 	var baseStyle lipgloss.Style
-	topBorder = styles.GenerateTopBorderWithTitle(" Releases ", t.Width(), styles.Border, styles.InactiveStyle)
+	topBorder = styles.GenerateTopBorderWithTitle(title, t.Width(), styles.Border, styles.InactiveStyle)
 	baseStyle = styles.InactiveStyle.Border(styles.Border, false, true, true)
 	view = baseStyle.Render(view)
 	return lipgloss.JoinVertical(lipgloss.Left, topBorder, view)

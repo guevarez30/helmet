@@ -122,3 +122,15 @@ type PluginUpdateMsg struct {
 type PluginUninstallMsg struct {
 	Err error
 }
+
+type BreadcrumbMsg struct {
+	Crumbs []string
+}
+
+type StatusMsg struct {
+	Text string
+}
+
+type ClearFlashMsg struct{}
+
+type ResetViewMsg struct{}
